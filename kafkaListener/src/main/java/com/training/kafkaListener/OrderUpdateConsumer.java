@@ -1,12 +1,17 @@
 package com.training.kafkaListener;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping; // Added
+import org.springframework.web.bind.annotation.RestController; // Added
 
 @Service
+@RestController // Makes this class also handle HTTP requests
 public class OrderUpdateConsumer {
 
     private final Cache<String, Boolean> processedEventCache;
+    private String lastMessage = "No events yet"; // Stores last message for Postman
 
     public OrderUpdateConsumer(Cache<String, Boolean> processedEventCache) {
         this.processedEventCache = processedEventCache;
@@ -17,14 +22,19 @@ public class OrderUpdateConsumer {
         String eventKey = event.getOrderId() + "_" + event.getNewStatus();
 
         if (processedEventCache.getIfPresent(eventKey) != null) {
-            System.out.println("Duplicate event skipped: " + eventKey);
+            lastMessage = "Duplicate event skipped: " + eventKey;
+            System.out.println(lastMessage);
             return;
         }
 
-        // Simulate actual processing
-        System.out.println("Processing event: " + event);
-
-        // After successful processing
+        lastMessage = "Processing event: " + event;
+        System.out.println(lastMessage);
         processedEventCache.put(eventKey, true);
+    }
+
+    // Simple endpoint to fetch the last processed/duplicate message
+    @GetMapping("/last-event")
+    public String getLastMessage() {
+        return lastMessage;
     }
 }
